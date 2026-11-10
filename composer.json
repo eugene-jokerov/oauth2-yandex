@@ -1,0 +1,48 @@
+{
+    "name": "jokerov/oauth2-yandex",
+    "description": "Yandex OAuth2 Client Provider for The PHP League OAuth2-Client",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Eugene Jokerov",
+            "email": "jokerov@gmail.com"
+        },
+        {
+            "name": "Alexey Rakeev",
+            "email": "alexey@rakeev.name"
+        }
+    ],
+    "keywords": [
+        "oauth",
+        "oauth2",
+        "client",
+        "authorization",
+        "authentication",
+        "yandex",
+        "yandex id",
+        "yandex oauth"
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "league/oauth2-client": "^2.6"
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "^6.5 || ^7.0",
+        "phpunit/phpunit": "^9.0 || ^10.0 || ^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jokerov\\OAuth2\\Client\\Provider\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jokerov\\OAuth2\\Client\\Test\\Provider\\": "test/"
+        }
+    },
+    "support": {
+        "issues": "https://github.com/eugene-jokerov/oauth2-yandex/issues",
+        "source": "https://github.com/eugene-jokerov/oauth2-yandex"
+    }
+}
