@@ -88,7 +88,7 @@ $newToken = $provider->getAccessToken('refresh_token', [
 | 2 | `?:` turned valid `"0"` values into `null` | `??` / explicit type checks |
 | 3 | No error handling for non-JSON or empty bodies (`$data['error_description']` read unconditionally) | `checkResponse()` handles non-array payloads and missing description |
 | 4 | `IdentityProviderException` carried the HTTP status (400) instead of the Yandex error code | error message now includes the Yandex `error` code, `getResponseBody()` returns the parsed array (the exception code stays the HTTP status, as `\Exception::$code` is `int`) |
-| 5 | The access token was passed in the query string (`?oauth_token=`), leaking into access logs | token is sent via `Authorization: Bearer` header |
+| 5 | The access token was passed in the query string (`?oauth_token=`), leaking into access logs | token is sent via the `Authorization: OAuth <token>` header (see the [Yandex docs](https://yandex.ru/dev/id/doc/ru/user-information)); without this header `login.yandex.ru/info` answers `401 NOT_AUTHORIZED` and the email is missing |
 | 6 | `getDefaultScopes()` was empty, so email was often missing | `login:email` is requested by default and custom scopes are appended to it (space separated, as Yandex expects) |
 | 7 | Tests were written for PHPUnit ~4.3 (`PHPUnit_Framework_TestCase`, `@expectedException`) and did not run on modern PHP | PHPUnit 9/10/11 tests with `GuzzleHttp\Handler\MockHandler` |
 | 8 | PHP `>=5.5`, no `support`/`keywords` in `composer.json` | PHP `^7.4 \|\| ^8.0`, `league/oauth2-client ^2.6`, complete metadata |

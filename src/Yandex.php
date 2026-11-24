@@ -49,13 +49,29 @@ class Yandex extends AbstractProvider
     /**
      * {@inheritdoc}
      *
-     * The access token is sent in the "Authorization: Bearer" header by
-     * AbstractProvider::getResourceOwner(), so the token never leaks into
+     * The access token is sent in the "Authorization" header by
+     * {@see getAuthorizationHeaders()}, so the token never leaks into
      * proxy or web server access logs via the query string.
      */
     public function getResourceOwnerDetailsUrl(AccessToken $token): string
     {
         return self::RESOURCE_OWNER_DETAILS_URL . '?' . http_build_query(['format' => 'json']);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Yandex expects the token in the "Authorization: OAuth <token>" header:
+     * https://yandex.ru/dev/id/doc/ru/user-information
+     *
+     * Without it login.yandex.ru/info answers 401 NOT_AUTHORIZED and the
+     * resource owner is built from the error payload, so getEmail() returns null.
+     *
+     * @param mixed|null $token Either a string or an access token instance
+     */
+    protected function getAuthorizationHeaders($token = null): array
+    {
+        return $token ? ['Authorization' => 'OAuth ' . (string) $token] : [];
     }
 
     /**
@@ -135,11 +151,23 @@ class Yandex extends AbstractProvider
         $message = $data['error_description'] ?? null;
 
         if (!is_string($message) || '' === $message) {
-            $message = is_string($data['error']) ? $data['error'] : 'Unknown Yandex error';
+            $message = $data['message'] ?? null;
         }
 
-        if (isset($data['error']) && is_string($data['error']) && $message !== $data['error']) {
-            $message = $data['error'] . ': ' . $message;
+        if (!is_string($message) || '' === $message) {
+            $message = isset($data['error']) && is_string($data['error']) ? $data['error'] : null;
+        }
+
+        if (!is_string($message) || '' === $message) {
+            $message = 'Unknown Yandex error';
+        }
+
+        $error = isset($data['code']) && is_string($data['code']) && '' !== $data['code']
+            ? $data['code']
+            : (isset($data['error']) && is_string($data['error']) ? $data['error'] : null);
+
+        if (null !== $error && $error !== $message && !str_contains($message, $error)) {
+            $message = $error . ': ' . $message;
         }
 
         return $message;
@@ -156,13 +184,22 @@ class Yandex extends AbstractProvider
     /**
      * Detects Yandex error payloads.
      *
-     * The token endpoint returns {"error": "...", "error_description": "..."},
-     * while login.yandex.ru/info may answer a bare {"error": "..."}.
+     * Two shapes are known:
+     *  - the token endpoint answers {"error": "...", "error_description": "..."};
+     *  - login.yandex.ru/info answers 401 with
+     *    {"code": "NOT_AUTHORIZED", "status": "error", "message": "...", "details": {}}.
+     *
+     * The "status" flag is checked, so a successful response that merely
+     * contains a "code" field is never treated as an error.
      *
      * @param array $data
      */
     private function hasError(array $data): bool
     {
+        if (isset($data['status']) && is_string($data['status']) && 'error' === strtolower($data['status'])) {
+            return true;
+        }
+
         if (!isset($data['error'])) {
             return false;
         }
